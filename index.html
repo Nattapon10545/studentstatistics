@@ -1,0 +1,1039 @@
+<!doctype html>
+<html lang="th">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบสถิตินักเรียนโรงเรียนบ้านกิ่วพร้าว</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+        body {
+            box-sizing: border-box;
+            font-family: 'Sarabun', sans-serif;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .tab-button.active {
+            background-color: #fed7aa;
+            border-bottom: 3px solid #ea580c;
+        }
+        
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            
+            .print-area, .print-area * {
+                visibility: visible;
+            }
+            
+            .print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #ea580c;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body class="min-h-full bg-white"><!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+   <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+    <div class="spinner mx-auto mb-4"></div>
+    <p class="text-gray-700">กำลังบันทึกข้อมูล...</p>
+   </div>
+  </div><!-- Header -->
+  <header class="bg-white shadow-md border-b-4 border-orange-300">
+   <div class="container mx-auto px-4 py-6">
+    <div class="flex flex-col items-center"><img src="https://lh3.googleusercontent.com/d/1vQtWxoqhL4BWuOmDehWMGTqoRh63AThV" alt="โลโก้โรงเรียน" class="w-20 h-20 mb-4" onerror="this.src=''; this.alt='โลโก้โรงเรียนไม่สามารถโหลดได้'; this.style.display='none';">
+     <h1 id="schoolTitle" class="text-3xl font-bold text-orange-800 text-center">ระบบสถิตินักเรียนโรงเรียนบ้านกิ่วพร้าว</h1>
+    </div>
+   </div>
+  </header><!-- Navigation Tabs -->
+  <nav class="bg-white shadow-sm">
+   <div class="container mx-auto px-4">
+    <div class="flex flex-wrap justify-center space-x-0 md:space-x-4"><button onclick="showTab('attendance')" class="tab-button flex-1 md:flex-none px-6 py-4 text-sm md:text-base font-medium text-orange-700 hover:bg-orange-50 transition-colors active"> เช็คจำนวนนักเรียนรายวัน </button> <button onclick="showTab('students')" class="tab-button flex-1 md:flex-none px-6 py-4 text-sm md:text-base font-medium text-orange-700 hover:bg-orange-50 transition-colors"> ข้อมูลจำนวนนักเรียน </button> <button onclick="showTab('reports')" class="tab-button flex-1 md:flex-none px-6 py-4 text-sm md:text-base font-medium text-orange-700 hover:bg-orange-50 transition-colors"> รายงานผล </button>
+    </div>
+   </div>
+  </nav><!-- Main Content -->
+  <main class="container mx-auto px-4 py-8"><!-- Tab 1: Daily Attendance Check -->
+   <div id="attendance" class="tab-content active">
+    <div class="bg-white rounded-lg shadow-lg p-6">
+     <h2 class="text-2xl font-bold text-orange-800 mb-6">เช็คจำนวนนักเรียนรายวัน</h2><!-- Login Section -->
+     <div id="loginSection" class="mb-6 p-4 bg-orange-50 rounded-lg">
+      <div class="flex flex-col md:flex-row gap-4"><button onclick="showRegisterForm()" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"> สมัครสมาชิก </button> <button onclick="showLoginForm()" class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"> เข้าสู่ระบบ </button>
+      </div>
+     </div><!-- Date Selection -->
+     <div class="mb-6"><label class="block text-sm font-medium text-gray-700 mb-2">เลือกวันที่:</label> <input type="date" id="attendanceDate" class="w-full md:w-auto px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+     </div><!-- Check Attendance Button --> <button onclick="showAttendanceForm()" class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-medium mb-6 transition-colors"> เช็คชื่อ </button> <!-- Attendance Form -->
+     <div id="attendanceForm" style="display: none;">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"><!-- Student Count Table -->
+       <div class="bg-gray-50 p-4 rounded-lg">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">จำนวนนักเรียนที่มาเรียน</h3>
+        <div class="overflow-x-auto">
+         <table class="w-full text-sm">
+          <thead>
+           <tr class="bg-orange-200">
+            <th class="px-3 py-2 text-left">ระดับชั้น</th>
+            <th class="px-3 py-2 text-center">ชาย</th>
+            <th class="px-3 py-2 text-center">หญิง</th>
+            <th class="px-3 py-2 text-center">รวม</th>
+           </tr>
+          </thead>
+          <tbody id="attendanceTableBody"><!-- Will be populated by JavaScript -->
+          </tbody>
+         </table>
+        </div>
+       </div><!-- Absent Students Summary -->
+       <div class="bg-gray-50 p-4 rounded-lg">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">จำนวนนักเรียนที่ขาดเรียน</h3>
+        <div class="overflow-x-auto">
+         <table class="w-full text-sm">
+          <thead>
+           <tr class="bg-red-200">
+            <th class="px-3 py-2 text-left">ระดับชั้น</th>
+            <th class="px-3 py-2 text-center">ชาย</th>
+            <th class="px-3 py-2 text-center">หญิง</th>
+            <th class="px-3 py-2 text-center">รวม</th>
+           </tr>
+          </thead>
+          <tbody id="absentTableBody"><!-- Will be populated by JavaScript -->
+          </tbody>
+         </table>
+        </div>
+       </div>
+      </div><!-- General Conditions -->
+      <div class="mb-6">
+       <h3 class="text-lg font-semibold text-gray-800 mb-4">สภาพทั่วไป</h3>
+       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-2">บริเวณโรงเรียน:</label> <select id="schoolArea" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"> <option value="สะอาด">สะอาด</option> <option value="ไม่สะอาด">ไม่สะอาด</option> </select>
+        </div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-2">ห้องเรียน:</label> <select id="classroom" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"> <option value="สะอาด">สะอาด</option> <option value="ไม่สะอาด">ไม่สะอาด</option> </select>
+        </div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-2">น้ำดื่ม น้ำใช้:</label> <select id="water" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"> <option value="เพียงพอ">เพียงพอ</option> <option value="ไม่เพียงพอ">ไม่เพียงพอ</option> </select>
+        </div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-2">ห้องน้ำ:</label> <select id="restroom" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"> <option value="สะอาด">สะอาด</option> <option value="ไม่สะอาด">ไม่สะอาด</option> </select>
+        </div>
+       </div>
+      </div><!-- Training Topic -->
+      <div class="mb-6"><label class="block text-sm font-medium text-gray-700 mb-2">หัวข้อที่ครูเวรอบรมนักเรียนวันนี้:</label> <textarea id="trainingTopic" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500" rows="3" placeholder="กรอกรายละเอียดหัวข้อการอบรม"></textarea>
+      </div><!-- Duty Teachers -->
+      <div class="mb-6">
+       <h3 class="text-lg font-semibold text-gray-800 mb-4">ครูเวร</h3>
+       <div class="grid grid-cols-1 md:grid-cols-3 gap-4"><input type="text" id="teacher1" placeholder="ครูเวรคนที่ 1" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"> <input type="text" id="teacher2" placeholder="ครูเวรคนที่ 2" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"> <input type="text" id="teacher3" placeholder="ครูเวรคนที่ 3" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+       </div>
+      </div><!-- Inspector -->
+      <div class="mb-6"><label class="block text-sm font-medium text-gray-700 mb-2">ผู้ตรวจ:</label> <input type="text" id="inspector" value="นางนรินภรณ์ อินมา" class="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+      </div><!-- Save Button --> <button onclick="saveAttendance()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"> บันทึกข้อมูล </button>
+     </div>
+    </div>
+   </div><!-- Tab 2: Student Data -->
+   <div id="students" class="tab-content">
+    <div class="bg-white rounded-lg shadow-lg p-6">
+     <h2 class="text-2xl font-bold text-orange-800 mb-6">ข้อมูลจำนวนนักเรียน</h2>
+     <div class="overflow-x-auto mb-6">
+      <table class="w-full border-collapse border border-gray-300">
+       <thead>
+        <tr class="bg-orange-200">
+         <th class="border border-gray-300 px-4 py-2 text-left">ระดับชั้น</th>
+         <th class="border border-gray-300 px-4 py-2 text-center">ชาย</th>
+         <th class="border border-gray-300 px-4 py-2 text-center">หญิง</th>
+         <th class="border border-gray-300 px-4 py-2 text-center">รวม</th>
+        </tr>
+       </thead>
+       <tbody id="studentDataTable"><!-- Will be populated by JavaScript -->
+       </tbody>
+      </table>
+     </div><button onclick="showEditStudentForm()" class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"> แก้ไขจำนวนนักเรียน </button> <!-- Edit Student Form -->
+     <div id="editStudentForm" style="display: none;" class="mt-6 p-4 bg-gray-50 rounded-lg">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">แก้ไขจำนวนนักเรียน</h3>
+      <div id="editStudentInputs" class="space-y-4"><!-- Will be populated by JavaScript -->
+      </div>
+      <div class="mt-6 flex gap-4"><button onclick="saveStudentData()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"> บันทึก </button> <button onclick="cancelEditStudent()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"> ยกเลิก </button>
+      </div>
+     </div>
+    </div>
+   </div><!-- Tab 3: Reports -->
+   <div id="reports" class="tab-content">
+    <div class="bg-white rounded-lg shadow-lg p-6">
+     <h2 class="text-2xl font-bold text-orange-800 mb-6">รายงานผล</h2><!-- Date Selection -->
+     <div class="mb-6"><label class="block text-sm font-medium text-gray-700 mb-2">เลือกวันที่:</label> <input type="date" id="reportDate" class="w-full md:w-auto px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+     </div><!-- Report Table -->
+     <div id="reportTable" class="mb-6"><!-- Will be populated by JavaScript -->
+     </div><button onclick="printReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors no-print"> พิมพ์รายงาน </button>
+    </div>
+   </div>
+  </main><!-- Print Area -->
+  <div id="printArea" class="print-area" style="display: none;"><!-- Print content will be populated here -->
+  </div>
+  <script type="module">
+        // Firebase configuration
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
+        import { getDatabase, ref, set, get, child, push, update, remove } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js';
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCgYfDcno3FYrxXLeMAELdnYXvvLqFx-GM",
+            authDomain: "studentstatistics-31d42.firebaseapp.com",
+            databaseURL: "https://studentstatistics-31d42-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "studentstatistics-31d42",
+            storageBucket: "studentstatistics-31d42.firebasestorage.app",
+            messagingSenderId: "682609141495",
+            appId: "1:682609141495:web:1efef73d0f874ef6ced5f2",
+            measurementId: "G-6MMTQB57P3"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const auth = getAuth(app);
+
+        // Make Firebase available globally
+        window.database = database;
+        window.auth = auth;
+        window.firebaseRefs = { ref, set, get, child, push, update, remove };
+        window.firebaseAuth = { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged };
+
+        // Default student data
+        const defaultStudentData = {
+            'อนุบาล 1': { male: 15, female: 12 },
+            'อนุบาล 2': { male: 18, female: 16 },
+            'อนุบาล 3': { male: 20, female: 18 },
+            'ประถมศึกษาปีที่ 1': { male: 22, female: 20 },
+            'ประถมศึกษาปีที่ 2': { male: 25, female: 23 },
+            'ประถมศึกษาปีที่ 3': { male: 24, female: 22 },
+            'ประถมศึกษาปีที่ 4': { male: 26, female: 24 },
+            'ประถมศึกษาปีที่ 5': { male: 28, female: 26 },
+            'ประถมศึกษาปีที่ 6': { male: 30, female: 28 }
+        };
+
+        // Global variables
+        let currentStudentData = { ...defaultStudentData };
+        let currentUser = null;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDates();
+            loadStudentData();
+            renderStudentTable();
+            
+            // Check authentication state
+            window.firebaseAuth.onAuthStateChanged(auth, (user) => {
+                currentUser = user;
+                updateLoginUI();
+            });
+        });
+
+        function initializeDates() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('attendanceDate').value = today;
+            document.getElementById('reportDate').value = today;
+        }
+
+        function updateLoginUI() {
+            const loginSection = document.getElementById('loginSection');
+            if (currentUser) {
+                loginSection.innerHTML = `
+                    <div class="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                        <span class="text-green-700">เข้าสู่ระบบแล้ว: ${currentUser.email}</span>
+                        <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                            ออกจากระบบ
+                        </button>
+                    </div>
+                `;
+            } else {
+                loginSection.innerHTML = `
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <button onclick="showRegisterForm()" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                            สมัครสมาชิก
+                        </button>
+                        <button onclick="showLoginForm()" class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                            เข้าสู่ระบบ
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Thai month names function
+        function getThaiMonth(monthIndex) {
+            const thaiMonths = [
+                'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+            ];
+            return thaiMonths[monthIndex];
+        }
+
+        // Make functions globally available
+        window.showTab = showTab;
+        window.showRegisterForm = showRegisterForm;
+        window.showLoginForm = showLoginForm;
+        window.logout = logout;
+        window.showAttendanceForm = showAttendanceForm;
+        window.saveAttendance = saveAttendance;
+        window.showEditStudentForm = showEditStudentForm;
+        window.saveStudentData = saveStudentData;
+        window.cancelEditStudent = cancelEditStudent;
+        window.printReport = printReport;
+        window.loadReportData = loadReportData;
+        window.getThaiMonth = getThaiMonth;
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            // Load data for reports tab
+            if (tabName === 'reports') {
+                loadReportData();
+            }
+        }
+
+        async function showRegisterForm() {
+            const { value: formValues } = await Swal.fire({
+                title: 'สมัครสมาชิก',
+                html: `
+                    <input id="swal-input1" class="swal2-input" placeholder="อีเมล" type="email">
+                    <input id="swal-input2" class="swal2-input" placeholder="รหัสผ่าน" type="password">
+                `,
+                focusConfirm: false,
+                preConfirm: () => {
+                    return [
+                        document.getElementById('swal-input1').value,
+                        document.getElementById('swal-input2').value
+                    ]
+                }
+            });
+
+            if (formValues && formValues[0] && formValues[1]) {
+                try {
+                    showLoading();
+                    await window.firebaseAuth.createUserWithEmailAndPassword(auth, formValues[0], formValues[1]);
+                    hideLoading();
+                    Swal.fire('สำเร็จ!', 'สมัครสมาชิกเรียบร้อยแล้ว', 'success');
+                } catch (error) {
+                    hideLoading();
+                    Swal.fire('เกิดข้อผิดพลาด!', error.message, 'error');
+                }
+            }
+        }
+
+        async function showLoginForm() {
+            const { value: formValues } = await Swal.fire({
+                title: 'เข้าสู่ระบบ',
+                html: `
+                    <input id="swal-input1" class="swal2-input" placeholder="อีเมล" type="email">
+                    <input id="swal-input2" class="swal2-input" placeholder="รหัสผ่าน" type="password">
+                `,
+                focusConfirm: false,
+                preConfirm: () => {
+                    return [
+                        document.getElementById('swal-input1').value,
+                        document.getElementById('swal-input2').value
+                    ]
+                }
+            });
+
+            if (formValues && formValues[0] && formValues[1]) {
+                try {
+                    showLoading();
+                    await window.firebaseAuth.signInWithEmailAndPassword(auth, formValues[0], formValues[1]);
+                    hideLoading();
+                    Swal.fire('สำเร็จ!', 'เข้าสู่ระบบเรียบร้อยแล้ว', 'success');
+                } catch (error) {
+                    hideLoading();
+                    Swal.fire('เกิดข้อผิดพลาด!', error.message, 'error');
+                }
+            }
+        }
+
+        async function logout() {
+            try {
+                await auth.signOut();
+                Swal.fire('สำเร็จ!', 'ออกจากระบบเรียบร้อยแล้ว', 'success');
+            } catch (error) {
+                Swal.fire('เกิดข้อผิดพลาด!', error.message, 'error');
+            }
+        }
+
+        function showAttendanceForm() {
+            if (!currentUser) {
+                Swal.fire('กรุณาเข้าสู่ระบบ!', 'คุณต้องเข้าสู่ระบบก่อนใช้งาน', 'warning');
+                return;
+            }
+            
+            document.getElementById('attendanceForm').style.display = 'block';
+            renderAttendanceTable();
+        }
+
+        function renderAttendanceTable() {
+            const tbody = document.getElementById('attendanceTableBody');
+            const absentTbody = document.getElementById('absentTableBody');
+            
+            tbody.innerHTML = '';
+            absentTbody.innerHTML = '';
+            
+            const grades = Object.keys(currentStudentData);
+            let totalMale = 0, totalFemale = 0, totalAttendedMale = 0, totalAttendedFemale = 0;
+            
+            grades.forEach(grade => {
+                const data = currentStudentData[grade];
+                totalMale += data.male;
+                totalFemale += data.female;
+                
+                // Attendance row
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-3 py-2 border-b">${grade}</td>
+                    <td class="px-3 py-2 border-b text-center">
+                        <input type="number" id="attended_${grade}_male" min="0" max="${data.male}" value="0" 
+                               class="w-16 px-2 py-1 border rounded text-center" onchange="updateAbsentTable()">
+                    </td>
+                    <td class="px-3 py-2 border-b text-center">
+                        <input type="number" id="attended_${grade}_female" min="0" max="${data.female}" value="0" 
+                               class="w-16 px-2 py-1 border rounded text-center" onchange="updateAbsentTable()">
+                    </td>
+                    <td class="px-3 py-2 border-b text-center" id="total_attended_${grade}">0</td>
+                `;
+                tbody.appendChild(row);
+                
+                // Absent row
+                const absentRow = document.createElement('tr');
+                absentRow.innerHTML = `
+                    <td class="px-3 py-2 border-b">${grade}</td>
+                    <td class="px-3 py-2 border-b text-center" id="absent_${grade}_male">${data.male}</td>
+                    <td class="px-3 py-2 border-b text-center" id="absent_${grade}_female">${data.female}</td>
+                    <td class="px-3 py-2 border-b text-center" id="total_absent_${grade}">${data.male + data.female}</td>
+                `;
+                absentTbody.appendChild(absentRow);
+            });
+            
+            // Add summary rows
+            const summaryRow = document.createElement('tr');
+            summaryRow.className = 'bg-orange-100 font-semibold';
+            summaryRow.innerHTML = `
+                <td class="px-3 py-2 border-b">รวมทั้งสิ้น</td>
+                <td class="px-3 py-2 border-b text-center" id="total_attended_male">0</td>
+                <td class="px-3 py-2 border-b text-center" id="total_attended_female">0</td>
+                <td class="px-3 py-2 border-b text-center" id="grand_total_attended">0</td>
+            `;
+            tbody.appendChild(summaryRow);
+            
+            const absentSummaryRow = document.createElement('tr');
+            absentSummaryRow.className = 'bg-red-100 font-semibold';
+            absentSummaryRow.innerHTML = `
+                <td class="px-3 py-2 border-b">รวมทั้งสิ้น</td>
+                <td class="px-3 py-2 border-b text-center" id="total_absent_male">${totalMale}</td>
+                <td class="px-3 py-2 border-b text-center" id="total_absent_female">${totalFemale}</td>
+                <td class="px-3 py-2 border-b text-center" id="grand_total_absent">${totalMale + totalFemale}</td>
+            `;
+            absentTbody.appendChild(absentSummaryRow);
+        }
+
+        window.updateAbsentTable = function() {
+            const grades = Object.keys(currentStudentData);
+            let totalAttendedMale = 0, totalAttendedFemale = 0;
+            let totalAbsentMale = 0, totalAbsentFemale = 0;
+            
+            grades.forEach(grade => {
+                const data = currentStudentData[grade];
+                const attendedMale = parseInt(document.getElementById(`attended_${grade}_male`).value) || 0;
+                const attendedFemale = parseInt(document.getElementById(`attended_${grade}_female`).value) || 0;
+                
+                const absentMale = data.male - attendedMale;
+                const absentFemale = data.female - attendedFemale;
+                
+                // Update totals
+                document.getElementById(`total_attended_${grade}`).textContent = attendedMale + attendedFemale;
+                document.getElementById(`absent_${grade}_male`).textContent = absentMale;
+                document.getElementById(`absent_${grade}_female`).textContent = absentFemale;
+                document.getElementById(`total_absent_${grade}`).textContent = absentMale + absentFemale;
+                
+                totalAttendedMale += attendedMale;
+                totalAttendedFemale += attendedFemale;
+                totalAbsentMale += absentMale;
+                totalAbsentFemale += absentFemale;
+            });
+            
+            // Update summary
+            document.getElementById('total_attended_male').textContent = totalAttendedMale;
+            document.getElementById('total_attended_female').textContent = totalAttendedFemale;
+            document.getElementById('grand_total_attended').textContent = totalAttendedMale + totalAttendedFemale;
+            document.getElementById('total_absent_male').textContent = totalAbsentMale;
+            document.getElementById('total_absent_female').textContent = totalAbsentFemale;
+            document.getElementById('grand_total_absent').textContent = totalAbsentMale + totalAbsentFemale;
+        };
+
+        async function saveAttendance() {
+            if (!currentUser) {
+                Swal.fire('กรุณาเข้าสู่ระบบ!', 'คุณต้องเข้าสู่ระบบก่อนบันทึกข้อมูล', 'warning');
+                return;
+            }
+            
+            try {
+                showLoading();
+                
+                const date = document.getElementById('attendanceDate').value;
+                const attendanceData = {};
+                
+                // Collect attendance data
+                Object.keys(currentStudentData).forEach(grade => {
+                    attendanceData[grade] = {
+                        male: parseInt(document.getElementById(`attended_${grade}_male`).value) || 0,
+                        female: parseInt(document.getElementById(`attended_${grade}_female`).value) || 0
+                    };
+                });
+                
+                // Collect general conditions
+                const generalConditions = {
+                    schoolArea: document.getElementById('schoolArea').value,
+                    classroom: document.getElementById('classroom').value,
+                    water: document.getElementById('water').value,
+                    restroom: document.getElementById('restroom').value
+                };
+                
+                const recordData = {
+                    date: date,
+                    attendance: JSON.stringify(attendanceData),
+                    generalConditions: JSON.stringify(generalConditions),
+                    trainingTopic: document.getElementById('trainingTopic').value,
+                    dutyTeachers: JSON.stringify({
+                        teacher1: document.getElementById('teacher1').value,
+                        teacher2: document.getElementById('teacher2').value,
+                        teacher3: document.getElementById('teacher3').value
+                    }),
+                    inspector: document.getElementById('inspector').value,
+                    studentData: JSON.stringify(currentStudentData),
+                    timestamp: Date.now()
+                };
+                
+                // Save to Firebase
+                await window.firebaseRefs.set(window.firebaseRefs.ref(database, `attendance/${date}`), recordData);
+                
+                hideLoading();
+                Swal.fire('สำเร็จ!', 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success');
+                
+            } catch (error) {
+                hideLoading();
+                Swal.fire('เกิดข้อผิดพลาด!', error.message, 'error');
+            }
+        }
+
+        async function loadStudentData() {
+            try {
+                const snapshot = await window.firebaseRefs.get(window.firebaseRefs.child(window.firebaseRefs.ref(database), 'studentData'));
+                if (snapshot.exists()) {
+                    currentStudentData = snapshot.val();
+                } else {
+                    // Save default data to Firebase
+                    await window.firebaseRefs.set(window.firebaseRefs.ref(database, 'studentData'), defaultStudentData);
+                }
+            } catch (error) {
+                console.error('Error loading student data:', error);
+            }
+        }
+
+        function renderStudentTable() {
+            const tbody = document.getElementById('studentDataTable');
+            tbody.innerHTML = '';
+            
+            const grades = Object.keys(currentStudentData);
+            let totalMale = 0, totalFemale = 0;
+            let kindergartenMale = 0, kindergartenFemale = 0;
+            let primaryMale = 0, primaryFemale = 0;
+            
+            grades.forEach(grade => {
+                const data = currentStudentData[grade];
+                
+                if (grade.includes('อนุบาล')) {
+                    kindergartenMale += data.male;
+                    kindergartenFemale += data.female;
+                } else {
+                    primaryMale += data.male;
+                    primaryFemale += data.female;
+                }
+                
+                totalMale += data.male;
+                totalFemale += data.female;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="border border-gray-300 px-4 py-2">${grade}</td>
+                    <td class="border border-gray-300 px-4 py-2 text-center">${data.male}</td>
+                    <td class="border border-gray-300 px-4 py-2 text-center">${data.female}</td>
+                    <td class="border border-gray-300 px-4 py-2 text-center">${data.male + data.female}</td>
+                `;
+                tbody.appendChild(row);
+                
+                // Add summary rows after kindergarten
+                if (grade === 'อนุบาล 3') {
+                    const summaryRow = document.createElement('tr');
+                    summaryRow.className = 'bg-orange-100 font-semibold';
+                    summaryRow.innerHTML = `
+                        <td class="border border-gray-300 px-4 py-2">รวมอนุบาล</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">${kindergartenMale}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">${kindergartenFemale}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">${kindergartenMale + kindergartenFemale}</td>
+                    `;
+                    tbody.appendChild(summaryRow);
+                }
+            });
+            
+            // Add primary summary
+            const primarySummaryRow = document.createElement('tr');
+            primarySummaryRow.className = 'bg-orange-100 font-semibold';
+            primarySummaryRow.innerHTML = `
+                <td class="border border-gray-300 px-4 py-2">รวมประถม</td>
+                <td class="border border-gray-300 px-4 py-2 text-center">${primaryMale}</td>
+                <td class="border border-gray-300 px-4 py-2 text-center">${primaryFemale}</td>
+                <td class="border border-gray-300 px-4 py-2 text-center">${primaryMale + primaryFemale}</td>
+            `;
+            tbody.appendChild(primarySummaryRow);
+            
+            // Add grand total
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'bg-orange-200 font-bold';
+            totalRow.innerHTML = `
+                <td class="border border-gray-300 px-4 py-2">รวมทั้งสิ้น</td>
+                <td class="border border-gray-300 px-4 py-2 text-center">${totalMale}</td>
+                <td class="border border-gray-300 px-4 py-2 text-center">${totalFemale}</td>
+                <td class="border border-gray-300 px-4 py-2 text-center">${totalMale + totalFemale}</td>
+            `;
+            tbody.appendChild(totalRow);
+        }
+
+        function showEditStudentForm() {
+            document.getElementById('editStudentForm').style.display = 'block';
+            
+            const container = document.getElementById('editStudentInputs');
+            container.innerHTML = '';
+            
+            Object.keys(currentStudentData).forEach(grade => {
+                const data = currentStudentData[grade];
+                const div = document.createElement('div');
+                div.className = 'grid grid-cols-1 md:grid-cols-3 gap-4 items-center';
+                div.innerHTML = `
+                    <label class="font-medium">${grade}:</label>
+                    <input type="number" id="edit_${grade}_male" value="${data.male}" min="0" 
+                           class="px-3 py-2 border border-gray-300 rounded-lg" placeholder="ชาย">
+                    <input type="number" id="edit_${grade}_female" value="${data.female}" min="0" 
+                           class="px-3 py-2 border border-gray-300 rounded-lg" placeholder="หญิง">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function saveStudentData() {
+            try {
+                showLoading();
+                
+                const newData = {};
+                Object.keys(currentStudentData).forEach(grade => {
+                    newData[grade] = {
+                        male: parseInt(document.getElementById(`edit_${grade}_male`).value) || 0,
+                        female: parseInt(document.getElementById(`edit_${grade}_female`).value) || 0
+                    };
+                });
+                
+                currentStudentData = newData;
+                
+                // Save to Firebase
+                await window.firebaseRefs.set(window.firebaseRefs.ref(database, 'studentData'), newData);
+                
+                renderStudentTable();
+                document.getElementById('editStudentForm').style.display = 'none';
+                
+                hideLoading();
+                Swal.fire('สำเร็จ!', 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success');
+                
+            } catch (error) {
+                hideLoading();
+                Swal.fire('เกิดข้อผิดพลาด!', error.message, 'error');
+            }
+        }
+
+        function cancelEditStudent() {
+            document.getElementById('editStudentForm').style.display = 'none';
+        }
+
+        async function loadReportData() {
+            const date = document.getElementById('reportDate').value;
+            const reportTable = document.getElementById('reportTable');
+            
+            try {
+                const snapshot = await window.firebaseRefs.get(window.firebaseRefs.child(window.firebaseRefs.ref(database), `attendance/${date}`));
+                
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const attendanceData = JSON.parse(data.attendance);
+                    const studentData = JSON.parse(data.studentData);
+                    
+                    renderReportTable(studentData, attendanceData, reportTable);
+                } else {
+                    reportTable.innerHTML = '<p class="text-gray-500">ไม่พบข้อมูลสำหรับวันที่ที่เลือก</p>';
+                }
+            } catch (error) {
+                reportTable.innerHTML = '<p class="text-red-500">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>';
+            }
+        }
+
+        function renderReportTable(studentData, attendanceData, container) {
+            const grades = Object.keys(studentData);
+            let totalStudents = 0, totalAttended = 0, totalAbsent = 0;
+            
+            let html = `
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-orange-200">
+                                <th class="border border-gray-300 px-4 py-2 text-left">ระดับชั้น</th>
+                                <th class="border border-gray-300 px-4 py-2 text-center">จำนวนนักเรียนทั้งหมด</th>
+                                <th class="border border-gray-300 px-4 py-2 text-center">มาเรียน</th>
+                                <th class="border border-gray-300 px-4 py-2 text-center">ขาดเรียน</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            grades.forEach(grade => {
+                const total = studentData[grade].male + studentData[grade].female;
+                const attended = (attendanceData[grade]?.male || 0) + (attendanceData[grade]?.female || 0);
+                const absent = total - attended;
+                
+                totalStudents += total;
+                totalAttended += attended;
+                totalAbsent += absent;
+                
+                html += `
+                    <tr>
+                        <td class="border border-gray-300 px-4 py-2">${grade}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">${total}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">${attended}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">${absent}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    <tr class="bg-orange-100 font-semibold">
+                        <td class="border border-gray-300 px-4 py-2">รวมทั้งสิ้น</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">${totalStudents}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">${totalAttended}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">${totalAbsent}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        async function printReport() {
+            const date = document.getElementById('reportDate').value;
+            
+            try {
+                const snapshot = await window.firebaseRefs.get(window.firebaseRefs.child(window.firebaseRefs.ref(database), `attendance/${date}`));
+                
+                if (!snapshot.exists()) {
+                    Swal.fire('ไม่พบข้อมูล!', 'ไม่พบข้อมูลสำหรับวันที่ที่เลือก', 'warning');
+                    return;
+                }
+                
+                const data = snapshot.val();
+                const attendanceData = JSON.parse(data.attendance);
+                const studentData = JSON.parse(data.studentData);
+                const generalConditions = JSON.parse(data.generalConditions);
+                const dutyTeachers = JSON.parse(data.dutyTeachers);
+                
+                generatePrintReport(date, studentData, attendanceData, generalConditions, dutyTeachers, data.trainingTopic, data.inspector);
+                
+            } catch (error) {
+                Swal.fire('เกิดข้อผิดพลาด!', 'ไม่สามารถสร้างรายงานได้', 'error');
+            }
+        }
+
+        function generatePrintReport(date, studentData, attendanceData, generalConditions, dutyTeachers, trainingTopic, inspector) {
+            const dateObj = new Date(date);
+            const dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+            const dayName = dayNames[dateObj.getDay()];
+            const formattedDate = `วัน${dayName}ที่ ${dateObj.getDate()} ${getThaiMonth(dateObj.getMonth())} ${dateObj.getFullYear() + 543}`;
+            
+            const grades = Object.keys(studentData);
+            let totalStudents = 0, totalAttended = 0, totalAbsent = 0;
+            
+            let tableRows = '';
+            let totalStudentsMale = 0, totalStudentsFemale = 0;
+            let totalAttendedMale = 0, totalAttendedFemale = 0;
+            let totalAbsentMale = 0, totalAbsentFemale = 0;
+            
+            grades.forEach(grade => {
+                const studentMale = studentData[grade].male;
+                const studentFemale = studentData[grade].female;
+                const total = studentMale + studentFemale;
+                
+                const attendedMale = attendanceData[grade]?.male || 0;
+                const attendedFemale = attendanceData[grade]?.female || 0;
+                const attended = attendedMale + attendedFemale;
+                
+                const absentMale = studentMale - attendedMale;
+                const absentFemale = studentFemale - attendedFemale;
+                const absent = absentMale + absentFemale;
+                
+                totalStudents += total;
+                totalAttended += attended;
+                totalAbsent += absent;
+                
+                totalStudentsMale += studentMale;
+                totalStudentsFemale += studentFemale;
+                totalAttendedMale += attendedMale;
+                totalAttendedFemale += attendedFemale;
+                totalAbsentMale += absentMale;
+                totalAbsentFemale += absentFemale;
+                
+                tableRows += `
+                    <tr>
+                        <td style="border: 1px solid #000; padding: 4px;">${grade}</td>
+                        <td style="border: 1px solid #000; padding: 4px; text-align: center;">${studentMale}</td>
+                        <td style="border: 1px solid #000; padding: 4px; text-align: center;">${studentFemale}</td>
+                        <td style="border: 1px solid #000; padding: 4px; text-align: center;">${total}</td>
+                        <td style="border: 1px solid #000; padding: 4px; text-align: center;">${attendedMale}</td>
+                        <td style="border: 1px solid #000; padding: 4px; text-align: center;">${attendedFemale}</td>
+                        <td style="border: 1px solid #000; padding: 4px; text-align: center;">${attended}</td>
+                        <td style="border: 1px solid #000; padding: 4px; text-align: center;">${absentMale}</td>
+                        <td style="border: 1px solid #000; padding: 4px; text-align: center;">${absentFemale}</td>
+                        <td style="border: 1px solid #000; padding: 4px; text-align: center;">${absent}</td>
+                    </tr>
+                `;
+            });
+            
+            const teacherSignatures = [dutyTeachers.teacher1, dutyTeachers.teacher2, dutyTeachers.teacher3]
+                .filter(teacher => teacher && teacher.trim())
+                .map(teacher => `
+                    <div style="margin-bottom: 30px;">
+                        <div style="border-bottom: 1px solid #000; width: 150px; margin-bottom: 5px;"></div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 11pt;">${teacher}</div>
+                        </div>
+                    </div>
+                `).join('');
+            
+            const printContent = `
+                <div style="font-family: 'Sarabun', sans-serif; max-width: 800px; margin: 0 auto; padding: 15px; background-color: white; font-size: 12pt;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <img src="https://lh3.googleusercontent.com/d/1vQtWxoqhL4BWuOmDehWMGTqoRh63AThV" 
+                             style="width: 60px; height: 60px; margin: 0 auto 10px auto; display: block;"
+                             onerror="this.style.display='none';">
+                        <h1 style="font-size: 16pt; font-weight: bold; margin: 8px 0;">รายงานสถิตินักเรียนรายวัน</h1>
+                        <h2 style="font-size: 14pt; margin: 4px 0;">โรงเรียนบ้านกิ่วพร้าว</h2>
+                        <p style="font-size: 12pt; margin: 4px 0;">${formattedDate}</p>
+                    </div>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11pt;">
+                        <thead>
+                            <tr style="background-color: #fed7aa;">
+                                <th rowspan="2" style="border: 1px solid #000; padding: 4px; vertical-align: middle;">ระดับชั้น</th>
+                                <th colspan="3" style="border: 1px solid #000; padding: 4px;">จำนวนนักเรียนทั้งหมด</th>
+                                <th colspan="3" style="border: 1px solid #000; padding: 4px;">มาเรียน</th>
+                                <th colspan="3" style="border: 1px solid #000; padding: 4px;">ขาดเรียน</th>
+                            </tr>
+                            <tr style="background-color: #fed7aa;">
+                                <th style="border: 1px solid #000; padding: 4px;">ชาย</th>
+                                <th style="border: 1px solid #000; padding: 4px;">หญิง</th>
+                                <th style="border: 1px solid #000; padding: 4px;">รวม</th>
+                                <th style="border: 1px solid #000; padding: 4px;">ชาย</th>
+                                <th style="border: 1px solid #000; padding: 4px;">หญิง</th>
+                                <th style="border: 1px solid #000; padding: 4px;">รวม</th>
+                                <th style="border: 1px solid #000; padding: 4px;">ชาย</th>
+                                <th style="border: 1px solid #000; padding: 4px;">หญิง</th>
+                                <th style="border: 1px solid #000; padding: 4px;">รวม</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                            <tr style="background-color: #fef3c7; font-weight: bold;">
+                                <td style="border: 1px solid #000; padding: 4px;">รวมทั้งสิ้น</td>
+                                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${totalStudentsMale}</td>
+                                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${totalStudentsFemale}</td>
+                                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${totalStudents}</td>
+                                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${totalAttendedMale}</td>
+                                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${totalAttendedFemale}</td>
+                                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${totalAttended}</td>
+                                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${totalAbsentMale}</td>
+                                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${totalAbsentFemale}</td>
+                                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${totalAbsent}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div style="display: flex; margin-bottom: 20px; gap: 15px;">
+                        <div style="flex: 1;">
+                            <h3 style="font-size: 12pt; font-weight: bold; margin-bottom: 8px;">สภาพทั่วไป</h3>
+                            <p style="margin: 3px 0; font-size: 11pt;">บริเวณโรงเรียน: ${generalConditions.schoolArea}</p>
+                            <p style="margin: 3px 0; font-size: 11pt;">ห้องเรียน: ${generalConditions.classroom}</p>
+                            <p style="margin: 3px 0; font-size: 11pt;">น้ำดื่ม น้ำใช้: ${generalConditions.water}</p>
+                            <p style="margin: 3px 0; font-size: 11pt;">ห้องน้ำ: ${generalConditions.restroom}</p>
+                        </div>
+                        
+                        <div style="flex: 1;">
+                            <h3 style="font-size: 12pt; font-weight: bold; margin-bottom: 8px;">หัวข้อที่ครูเวรอบรมนักเรียนวันนี้</h3>
+                            <p style="margin: 3px 0; font-size: 11pt;">${trainingTopic || '-'}</p>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; margin-top: 30px;">
+                        <div style="text-align: center;">
+                            <h4 style="font-size: 12pt; font-weight: bold; margin-bottom: 25px;">ครูเวร</h4>
+                            ${teacherSignatures}
+                        </div>
+                        
+                        <div style="text-align: center;">
+                            <h4 style="font-size: 12pt; font-weight: bold; margin-bottom: 25px;">ผู้ตรวจ</h4>
+                            <div style="margin-bottom: 30px;">
+                                <div style="border-bottom: 1px solid #000; width: 180px; margin-bottom: 5px;"></div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 11pt;">${inspector}</div>
+                                    <div style="font-size: 10pt;">(ผู้อำนวยการโรงเรียนบ้านกิ่วพร้าว)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = printContent;
+            printArea.style.display = 'block';
+            
+            window.print();
+            
+            setTimeout(() => {
+                printArea.style.display = 'none';
+            }, 1000);
+        }
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // Data SDK Implementation
+        const dataHandler = {
+            onDataChanged(data) {
+                // Handle data changes if needed
+                console.log('Data updated:', data);
+            }
+        };
+
+        // Element SDK Implementation
+        const defaultConfig = {
+            school_name: "โรงเรียนบ้านกิ่วพร้าว",
+            inspector_name: "นางนรินภรณ์ อินมา"
+        };
+
+        async function render(config) {
+            const schoolName = config.school_name || defaultConfig.school_name;
+            const inspectorName = config.inspector_name || defaultConfig.inspector_name;
+            
+            // Update school title
+            const schoolTitle = document.getElementById('schoolTitle');
+            if (schoolTitle) {
+                schoolTitle.textContent = `ระบบสถิตินักเรียน${schoolName}`;
+            }
+            
+            // Update inspector field
+            const inspectorField = document.getElementById('inspector');
+            if (inspectorField) {
+                inspectorField.value = inspectorName;
+            }
+        }
+
+        function mapToCapabilities(config) {
+            return {
+                recolorables: [],
+                borderables: [],
+                fontEditable: undefined,
+                fontSizeable: undefined
+            };
+        }
+
+        function mapToEditPanelValues(config) {
+            return new Map([
+                ["school_name", config.school_name || defaultConfig.school_name],
+                ["inspector_name", config.inspector_name || defaultConfig.inspector_name]
+            ]);
+        }
+
+        // Initialize SDKs
+        if (window.dataSdk) {
+            window.dataSdk.init(dataHandler);
+        }
+
+        if (window.elementSdk) {
+            window.elementSdk.init({
+                defaultConfig,
+                render,
+                mapToCapabilities,
+                mapToEditPanelValues
+            });
+        }
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99368a4004917991',t:'MTc2MTI3ODE0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
