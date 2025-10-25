@@ -252,6 +252,13 @@
             'ประถมศึกษาปีที่ 6': { male: 30, female: 28 }
         };
 
+        // Grade order for consistent display
+        const gradeOrder = [
+            'อนุบาล 1', 'อนุบาล 2', 'อนุบาล 3',
+            'ประถมศึกษาปีที่ 1', 'ประถมศึกษาปีที่ 2', 'ประถมศึกษาปีที่ 3',
+            'ประถมศึกษาปีที่ 4', 'ประถมศึกษาปีที่ 5', 'ประถมศึกษาปีที่ 6'
+        ];
+
         // Global variables
         let currentStudentData = { ...defaultStudentData };
         let currentUser = null;
@@ -436,10 +443,9 @@
             tbody.innerHTML = '';
             absentTbody.innerHTML = '';
             
-            const grades = Object.keys(currentStudentData);
             let totalMale = 0, totalFemale = 0, totalAttendedMale = 0, totalAttendedFemale = 0;
             
-            grades.forEach(grade => {
+            gradeOrder.forEach(grade => {
                 const data = currentStudentData[grade];
                 totalMale += data.male;
                 totalFemale += data.female;
@@ -494,11 +500,10 @@
         }
 
         window.updateAbsentTable = function() {
-            const grades = Object.keys(currentStudentData);
             let totalAttendedMale = 0, totalAttendedFemale = 0;
             let totalAbsentMale = 0, totalAbsentFemale = 0;
             
-            grades.forEach(grade => {
+            gradeOrder.forEach(grade => {
                 const data = currentStudentData[grade];
                 const attendedMale = parseInt(document.getElementById(`attended_${grade}_male`).value) || 0;
                 const attendedFemale = parseInt(document.getElementById(`attended_${grade}_female`).value) || 0;
@@ -540,7 +545,7 @@
                 const attendanceData = {};
                 
                 // Collect attendance data
-                Object.keys(currentStudentData).forEach(grade => {
+                gradeOrder.forEach(grade => {
                     attendanceData[grade] = {
                         male: parseInt(document.getElementById(`attended_${grade}_male`).value) || 0,
                         female: parseInt(document.getElementById(`attended_${grade}_female`).value) || 0
@@ -605,12 +610,11 @@
             const tbody = document.getElementById('studentDataTable');
             tbody.innerHTML = '';
             
-            const grades = Object.keys(currentStudentData);
             let totalMale = 0, totalFemale = 0;
             let kindergartenMale = 0, kindergartenFemale = 0;
             let primaryMale = 0, primaryFemale = 0;
             
-            grades.forEach(grade => {
+            gradeOrder.forEach(grade => {
                 const data = currentStudentData[grade];
                 
                 if (grade.includes('อนุบาล')) {
@@ -681,7 +685,7 @@
             const container = document.getElementById('editStudentInputs');
             container.innerHTML = '';
             
-            Object.keys(currentStudentData).forEach(grade => {
+            gradeOrder.forEach(grade => {
                 const data = currentStudentData[grade];
                 const div = document.createElement('div');
                 div.className = 'grid grid-cols-1 md:grid-cols-3 gap-4 items-center';
@@ -701,7 +705,7 @@
                 showLoading();
                 
                 const newData = {};
-                Object.keys(currentStudentData).forEach(grade => {
+                gradeOrder.forEach(grade => {
                     newData[grade] = {
                         male: parseInt(document.getElementById(`edit_${grade}_male`).value) || 0,
                         female: parseInt(document.getElementById(`edit_${grade}_female`).value) || 0
@@ -777,7 +781,6 @@
         }
 
         function renderReportTable(studentData, attendanceData, container) {
-            const grades = Object.keys(studentData);
             let totalStudentsMale = 0, totalStudentsFemale = 0;
             let totalAttendedMale = 0, totalAttendedFemale = 0;
             let totalAbsentMale = 0, totalAbsentFemale = 0;
@@ -807,7 +810,7 @@
                         <tbody>
             `;
             
-            grades.forEach(grade => {
+            gradeOrder.forEach(grade => {
                 const studentMale = studentData[grade].male;
                 const studentFemale = studentData[grade].female;
                 const totalStudents = studentMale + studentFemale;
@@ -894,7 +897,6 @@
             const dayName = dayNames[dateObj.getDay()];
             const formattedDate = `วัน${dayName}ที่ ${dateObj.getDate()} ${getThaiMonth(dateObj.getMonth())} ${dateObj.getFullYear() + 543}`;
             
-            const grades = Object.keys(studentData);
             let totalStudents = 0, totalAttended = 0, totalAbsent = 0;
             
             let tableRows = '';
@@ -902,7 +904,7 @@
             let totalAttendedMale = 0, totalAttendedFemale = 0;
             let totalAbsentMale = 0, totalAbsentFemale = 0;
             
-            grades.forEach(grade => {
+            gradeOrder.forEach(grade => {
                 const studentMale = studentData[grade].male;
                 const studentFemale = studentData[grade].female;
                 const total = studentMale + studentFemale;
@@ -1116,5 +1118,5 @@
             });
         }
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9937db19e2797dc3',t:'MTc2MTI5MTkzOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9941ff0b275f7991',t:'MTc2MTM5ODI2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
